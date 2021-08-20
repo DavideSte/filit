@@ -44,6 +44,8 @@ class _PointsSliderState extends State<PointsSlider> {
   String parola2 = '';
   int actualTeam = 0;
   int actualRound = 0;
+  int tessera = rng.nextInt(100);
+
 
   void _refreshBottomPlacement() {
     setState(() {
@@ -73,8 +75,8 @@ class _PointsSliderState extends State<PointsSlider> {
     var jsonText = await rootBundle.loadString('assets/files/schede.json');
     jsonRead = json.decode(jsonText);
     setState(() {
-      parola1 = jsonRead['scheda-1']['Parola_1'];
-      parola2 = jsonRead['scheda-1']['Parola_2'];
+      parola1 = jsonRead['scheda-$tessera']['Parola_1'];
+      parola2 = jsonRead['scheda-$tessera']['Parola_2'];
     });
     return 'success';
   }
