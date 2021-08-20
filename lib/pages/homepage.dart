@@ -1,8 +1,6 @@
 import 'package:filit/pages/slider_page.dart';
 import 'package:flutter/material.dart';
 import 'slider_page.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -16,8 +14,7 @@ class _MyHomePageState extends State<MyHomePage> {
   var _team = 2;
   var _round = 5;
 
-
-  initializeGame() async {
+  initializeGame() {
     Navigator.pushNamed(
       context,
       StartGame.routeName,
