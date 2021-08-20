@@ -1,3 +1,5 @@
+import 'package:filit/pages/finalscore.dart';
+import 'package:filit/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
@@ -13,24 +15,6 @@ class StartGame extends StatefulWidget {
 }
 
 class _StartGameState extends State<StartGame> {
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: PointsSlider(),
-      ),
-    );
-  }
-}
-
-class PointsSlider extends StatefulWidget {
-  const PointsSlider({Key? key}) : super(key: key);
-
-  @override
-  _PointsSliderState createState() => _PointsSliderState();
-}
-
-class _PointsSliderState extends State<PointsSlider> {
   static final rng = Random();
   static const double blockHeight = 12;
   static const double barHeight = 450;
@@ -39,13 +23,29 @@ class _PointsSliderState extends State<PointsSlider> {
 
   int points = 0;
   double value = 75;
+
   static late Map<String, dynamic> jsonRead;
   String parola1 = '';
   String parola2 = '';
-  int actualTeam = 0;
-  int actualRound = 0;
-  int tessera = rng.nextInt(100);
+  int actualTeam = 1;
+  int actualRound = 1;
+  late int totalPlayer;
+  late int totalRound;
 
+  int tessera = rng.nextInt(100);
+  bool guess = false;
+  bool gameInitialized = false;
+
+  var pointsList = [];
+
+  void inizializzaPartita(teams, round) {
+    gameInitialized = true;
+    for (var i = 0; i < teams; i++) {
+      pointsList.add(0);
+    }
+    totalPlayer = teams;
+    totalRound = round;
+  }
 
   void _refreshBottomPlacement() {
     setState(() {
@@ -71,6 +71,43 @@ class _PointsSliderState extends State<PointsSlider> {
     });
   }
 
+  void guessPosition() {
+    pointsList[actualTeam - 1] = pointsList[actualTeam - 1] + points;
+    if (guess) {
+      guess = false;
+    } else {
+      guess = true;
+    }
+    bottomPlacement = rng.nextDouble() * (barHeight - blockHeight);
+    tessera = rng.nextInt(100);
+    loadJsonData();
+    if (actualTeam == totalPlayer && actualRound == totalRound) {
+      Navigator.pushNamed(
+        context,
+        FinalScore.routeName,
+        arguments: {
+          'finalPoints': pointsList,
+        },
+      );
+    }
+    if (actualTeam < totalPlayer) {
+      actualTeam++;
+    } else {
+      actualRound++;
+      actualTeam = 1;
+    }
+    setState(() {});
+  }
+
+  void parolaScelta() {
+    if (guess) {
+      guess = false;
+    } else {
+      guess = true;
+    }
+    setState(() {});
+  }
+
   Future<String> loadJsonData() async {
     var jsonText = await rootBundle.loadString('assets/files/schede.json');
     jsonRead = json.decode(jsonText);
@@ -83,146 +120,176 @@ class _PointsSliderState extends State<PointsSlider> {
 
   @override
   void initState() {
+    print('init state');
     super.initState();
     loadJsonData();
-
   }
 
   @override
   Widget build(BuildContext context) {
     _refreshBottomPlacement();
-    //positioning using a relative distance from the top or the bottom
-    //we first place the max points block using random positioning in the stack and then build the
-    //rest of the point bar working from it.
-    return Column(
-      children: [
-        Card(
-          color: Colors.green,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(8, 2, 8, 2),
-            child: Text(
-              parola1,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: Colors.white),
-            ),
-          ),
-        ),
-        Container(
-          color: Colors.black,
-          height: barHeight,
-          width: width,
-          child: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: width, //larghezza
-              thumbShape: SliderComponentShape
-                  .noOverlay, //doesn't show the dot that's draggable
-              overlayShape: SliderComponentShape
-                  .noOverlay, //its shade doesn't show up either
-              valueIndicatorShape:
-                  SliderComponentShape.noOverlay, //no value tag when dragged
 
-              trackShape: const RectangularSliderTrackShape(),
+    // solo la prima volta che costuisco il widget inizializzo parametri
+    if (!gameInitialized) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map;
+      int teams = args['teams'];
+      int round = args['round'];
+      inizializzaPartita(teams, round);
+    }
+
+    return Scaffold(
+      body: Center(
+        child: Column(
+          children: [
+            Text('ROUND: $actualRound / $totalRound'),
+            Text('Squadra: $actualTeam / $totalPlayer'),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  MyHomePage.routeName,
+                );
+              },
+              child: const Text('Go Home!'),
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  bottom: bottomPlacement,
-                  child: Container(
-                    width: width,
-                    height: blockHeight,
-                    color: Colors.red,
-                  ),
+            Card(
+              color: Colors.green,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
+                child: Text(
+                  parola1,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      color: Colors.white),
                 ),
-                Positioned(
-                  bottom: bottomPlacement + blockHeight,
-                  child: Container(
-                    width: width,
-                    height: blockHeight,
-                    color: Colors.orange,
-                  ),
+              ),
+            ),
+            Container(
+              color: Colors.black,
+              height: barHeight,
+              width: width,
+              child: SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: width, //larghezza
+                  thumbShape: SliderComponentShape
+                      .noOverlay, //doesn't show the dot that's draggable
+                  overlayShape: SliderComponentShape
+                      .noOverlay, //its shade doesn't show up either
+                  valueIndicatorShape: SliderComponentShape
+                      .noOverlay, //no value tag when dragged
+
+                  trackShape: const RectangularSliderTrackShape(),
                 ),
-                Positioned(
-                  bottom: bottomPlacement - blockHeight,
-                  child: Container(
-                    width: width,
-                    height: blockHeight,
-                    color: Colors.orange,
-                  ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      bottom: bottomPlacement,
+                      child: Container(
+                        width: width,
+                        height: blockHeight,
+                        color: !guess ? Colors.red : Colors.black,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: bottomPlacement + blockHeight,
+                      child: Container(
+                        width: width,
+                        height: blockHeight,
+                        color: !guess ? Colors.orange : Colors.black,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: bottomPlacement - blockHeight,
+                      child: Container(
+                        width: width,
+                        height: blockHeight,
+                        color: !guess ? Colors.orange : Colors.black,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: bottomPlacement + 2 * blockHeight,
+                      child: Container(
+                        width: width,
+                        height: blockHeight,
+                        color: !guess ? Colors.yellow : Colors.black,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: bottomPlacement - 2 * blockHeight,
+                      child: Container(
+                        width: width,
+                        height: blockHeight,
+                        color: !guess ? Colors.yellow : Colors.black,
+                      ),
+                    ),
+                    if (guess)
+                      Opacity(
+                        opacity: 1,
+                        child: RotatedBox(
+                          quarterTurns: 3, //to rotate the slider
+                          child: Slider(
+                            value: value,
+                            min: 0,
+                            max: barHeight,
+                            divisions: barHeight.toInt(),
+                            label: value.round().toString(),
+                            onChanged: (value) =>
+                                setState(() => this.value = value),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                Positioned(
-                  bottom: bottomPlacement + 2 * blockHeight,
-                  child: Container(
-                    width: width,
-                    height: blockHeight,
-                    color: Colors.yellow,
-                  ),
+              ),
+            ),
+            Card(
+              color: Colors.green,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(8, 2, 8, 2),
+                child: Text(
+                  parola2,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      color: Colors.white),
                 ),
-                Positioned(
-                  bottom: bottomPlacement - 2 * blockHeight,
-                  child: Container(
-                    width: width,
-                    height: blockHeight,
-                    color: Colors.yellow,
-                  ),
-                ),
-                Opacity(
-                  opacity: 1,
-                  child: RotatedBox(
-                    quarterTurns: 3, //to rotate the slider
-                    child: Slider(
-                      value: value,
-                      min: 0,
-                      max: barHeight,
-                      divisions: barHeight.toInt(),
-                      label: value.round().toString(),
-                      onChanged: (value) => setState(() => this.value = value),
+              ),
+            ),
+            guess
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: MaterialButton(
+                      height: 40,
+                      child: const Text('conferma'),
+                      minWidth: 100,
+                      color: Colors.red,
+                      textColor: Colors.white,
+                      onPressed: guessPosition,
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: MaterialButton(
+                      height: 40,
+                      child: const Text('prosegui'),
+                      minWidth: 100,
+                      color: Colors.red,
+                      textColor: Colors.white,
+                      onPressed: parolaScelta,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Card(
-          color: Colors.green,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(8, 2, 8, 2),
-            child: Text(
-              parola2,
+            Text(
+              '${value.round()}  $points',
               style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: Colors.white),
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
             ),
-          ),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: MaterialButton(
-            height: 40,
-            child: Text('conferma'),
-            minWidth: 100,
-            color: Colors.red,
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                StartGame.routeName,
-              );
-            },
-          ),
-        ),
-        Text(
-          '${value.round()}  $points',
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

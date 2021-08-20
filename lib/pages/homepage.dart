@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'slider_page.dart';
 
 class MyHomePage extends StatefulWidget {
+  static const routeName = '/homepage';
   const MyHomePage({Key? key}) : super(key: key);
 
   @override
